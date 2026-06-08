@@ -29,10 +29,11 @@ async def verify_api_key(
     api_key = None
 
     if authorization:
-        if authorization.startswith("Bearer "):
-            api_key = authorization[7:]
-        else:
-            api_key = authorization
+        api_key = (
+            authorization[7:]
+            if authorization.startswith("Bearer ")
+            else authorization
+        )
     elif x_api_key:
         api_key = x_api_key
 

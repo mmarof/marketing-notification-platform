@@ -37,7 +37,9 @@ class TemplateService:
             else:
                 template_engine.render_sms(request.content, {})
         except Exception as e:
-            raise ValidationError(f"Invalid template syntax: {str(e)}")
+            raise ValidationError(
+                f"Invalid template syntax: {e!s}"
+            ) from e
 
         # Extract variables for documentation
         extracted_vars = template_engine.extract_variables(request.content)
@@ -103,8 +105,7 @@ class TemplateService:
             return Template.from_elasticsearch_document(doc)
         except Exception as e:
             if "not_found" in str(e).lower():
-                raise NotFoundError("Template not found")
-            raise
+                raise NotFoundError("Template not found") from e
 
     async def list_templates(
         self,
@@ -175,7 +176,9 @@ class TemplateService:
                 else:
                     template_engine.render_sms(request.content, {})
             except Exception as e:
-                raise ValidationError(f"Invalid template syntax: {str(e)}")
+                raise ValidationError(
+                    f"Invalid template syntax: {e!s}"
+                ) from e
             update_doc["content"] = request.content
         if request.subject is not None:
             update_doc["subject"] = request.subject

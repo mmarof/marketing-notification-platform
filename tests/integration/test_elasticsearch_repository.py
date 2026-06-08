@@ -2,11 +2,16 @@
 Integration tests for Elasticsearch repository operations.
 """
 
-import pytest
-from datetime import datetime
 from uuid import uuid4
 
-from src.models.notifications import Notification, NotificationChannel, NotificationStatus, Recipient
+import pytest
+
+from src.models.notifications import (
+    Notification,
+    NotificationChannel,
+    NotificationStatus,
+    Recipient,
+)
 from src.repositories.notification_repository import NotificationRepository
 
 
@@ -101,7 +106,7 @@ class TestNotificationRepository:
         assert len(notifications) == 5
 
         # Filter by channel
-        email_notifs, email_total = await repository.get_notifications_by_user(
+        _email_notifs, email_total = await repository.get_notifications_by_user(
             sample_user_id, channel="email"
         )
         assert email_total == 3  # 0, 2, 4

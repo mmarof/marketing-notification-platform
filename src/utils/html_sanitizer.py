@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 import bleach
-from bleach.sanitizer import ALLOWED_TAGS, ALLOWED_ATTRIBUTES
+from bleach.sanitizer import ALLOWED_ATTRIBUTES, ALLOWED_TAGS
 
 # Extended allowed tags for email HTML
 EMAIL_ALLOWED_TAGS = set(ALLOWED_TAGS) | {

@@ -4,11 +4,10 @@ Uses aiosmtplib for async SMTP operations.
 """
 
 import asyncio
-from typing import Any
-
-import structlog
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+import structlog
 
 from src.config.settings import get_settings
 from src.providers.base import BaseEmailProvider, EmailMessage, ProviderResponse

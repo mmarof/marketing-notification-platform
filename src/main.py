@@ -3,8 +3,8 @@ Application entry point.
 Configures FastAPI with all middleware, routers, and lifecycle hooks.
 """
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 import structlog
 from fastapi import FastAPI, Request, status
@@ -12,8 +12,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 
-from src.config.settings import get_settings
 from src.api.router import api_router
+from src.config.settings import get_settings
 from src.core.exceptions import (
     AuthenticationError,
     NotFoundError,
@@ -25,7 +25,7 @@ from src.core.middleware import (
     TenantContextMiddleware,
     TimingMiddleware,
 )
-from src.repositories.base import initialize_elasticsearch, close_elasticsearch
+from src.repositories.base import close_elasticsearch, initialize_elasticsearch
 
 logger = structlog.get_logger(__name__)
 settings = get_settings()
@@ -59,9 +59,9 @@ def create_application() -> FastAPI:
         title=settings.app_name,
         description="""
         ## Marketing Notification Platform
-        
+
         Production-grade multi-tenant SaaS notification system.
-        
+
         ### Features
         - **Email Notifications**: HTML templates, raw HTML, hybrid mode
         - **SMS Notifications**: Twilio integration with template support

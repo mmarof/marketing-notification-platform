@@ -2,11 +2,14 @@
 End-to-end tests for bulk notification scenarios.
 """
 
-import pytest
-from httpx import AsyncClient, ASGITransport
 from unittest.mock import patch
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 # Need to import app for the fixture
 from src.main import app
+
 
 @pytest.mark.asyncio
 class TestBulkNotifications:
@@ -15,11 +18,13 @@ class TestBulkNotifications:
     @pytest.fixture
     async def client(self, es_client):
         """Create test client."""
-        with patch("src.repositories.base.get_elasticsearch_client", return_value=es_client):
-            with patch("src.repositories.base._elasticsearch_client", es_client):
-                transport = ASGITransport(app=app)
-                async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    yield client
+        with (
+            patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
+            patch("src.repositories.base._elasticsearch_client", es_client),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                yield client
 
     @pytest.fixture
     async def auth_headers(self, es_client, sample_user_id, sample_api_key_id):

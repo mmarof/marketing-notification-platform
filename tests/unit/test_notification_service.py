@@ -2,9 +2,10 @@
 Unit tests for notification service.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+import pytest
 
 from src.models.notifications import NotificationChannel, NotificationStatus
 from src.schemas.notifications import NotificationRequest, RecipientInput

@@ -97,7 +97,7 @@ class Settings(BaseSettings):
     app_debug: bool = Field(default=True, alias="APP_DEBUG")
     app_version: str = Field(default="1.0.0", alias="APP_VERSION")
     secret_key: SecretStr = Field(
-        default=SecretKey("change-me-in-production"), alias="SECRET_KEY"
+        default=SecretStr("change-me-in-production"), alias="SECRET_KEY"
     )
 
     # Server

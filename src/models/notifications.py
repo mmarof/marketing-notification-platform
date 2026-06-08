@@ -4,14 +4,12 @@ Represents the core business entities for notifications.
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
 
-
-class NotificationChannel(str, Enum):
+class NotificationChannel(StrEnum):
     """Supported notification channels."""
 
     EMAIL = "email"
@@ -19,7 +17,7 @@ class NotificationChannel(str, Enum):
     BOTH = "both"
 
 
-class NotificationStatus(str, Enum):
+class NotificationStatus(StrEnum):
     """Notification lifecycle states."""
 
     QUEUED = "queued"
@@ -32,7 +30,7 @@ class NotificationStatus(str, Enum):
     UNSUBSCRIBED = "unsubscribed"
 
 
-class EmailMode(str, Enum):
+class EmailMode(StrEnum):
     """Email content rendering modes."""
 
     RAW_HTML = "raw_html"

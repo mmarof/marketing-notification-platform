@@ -6,12 +6,13 @@ Handles request IDs, tenant context, and timing.
 import time
 import uuid
 from contextvars import ContextVar
-from typing import Callable
 
 import structlog
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
+
+from src.core.exceptions import AuthenticationError
 
 # Context variables for request-scoped data
 request_id_ctx: ContextVar[str] = ContextVar("request_id", default="")

@@ -3,10 +3,10 @@ Pytest configuration and shared fixtures.
 """
 
 import asyncio
+import contextlib
 import os
-from datetime import datetime
-from typing import AsyncGenerator
-from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import AsyncGenerator
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
@@ -15,7 +15,6 @@ from elasticsearch import AsyncElasticsearch
 
 from src.config.settings import Settings
 from src.core.middleware import api_key_id_ctx, request_id_ctx, user_id_ctx, workspace_id_ctx
-
 
 # Override settings for testing
 TEST_SETTINGS = Settings(
@@ -76,10 +75,8 @@ async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
     yield client
 
     # Cleanup test indices
-    try:
+    with contextlib.suppress(Exception):
         await client.indices.delete(index="test_mnp_*")
-    except Exception:
-        pass
 
     await client.close()
 
@@ -113,18 +110,18 @@ async def es_index(es_client: AsyncElasticsearch):
 
     # Cleanup
     for suffix in ["notifications", "api_keys", "templates"]:
-        try:
+        with contextlib.suppress(Exception):
             await es_client.indices.delete(index=f"{prefix}{suffix}")
-        except Exception:
-            pass
 
 
 @pytest.fixture
 def mock_elasticsearch_client(es_client: AsyncElasticsearch):
     """Patch the global Elasticsearch client."""
-    with patch("src.repositories.base.get_elasticsearch_client", return_value=es_client):
-        with patch("src.repositories.base._elasticsearch_client", es_client):
-            yield es_client
+    with (
+        patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
+        patch("src.repositories.base._elasticsearch_client", es_client),
+    ):
+        yield es_client
 
 
 @pytest.fixture

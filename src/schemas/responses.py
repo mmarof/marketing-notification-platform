@@ -2,7 +2,7 @@
 Common response schemas.
 """
 
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from pydantic import BaseModel
 
@@ -22,7 +22,7 @@ class SuccessResponse(BaseModel):
     data: dict[str, Any] | None = None
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     """Generic paginated response."""
 
     items: list[T]

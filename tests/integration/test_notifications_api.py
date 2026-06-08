@@ -2,9 +2,9 @@
 Integration tests for notification API endpoints.
 """
 
+
 import pytest
-from httpx import AsyncClient, ASGITransport
-from uuid import uuid4
+from httpx import ASGITransport, AsyncClient
 
 from src.main import app
 
@@ -18,11 +18,13 @@ class TestNotificationsAPI:
         """Create test client with ES patched."""
         from unittest.mock import patch
 
-        with patch("src.repositories.base.get_elasticsearch_client", return_value=es_client):
-            with patch("src.repositories.base._elasticsearch_client", es_client):
-                transport = ASGITransport(app=app)
-                async with AsyncClient(transport=transport, base_url="http://test") as client:
-                    yield client
+        with (
+            patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
+            patch("src.repositories.base._elasticsearch_client", es_client),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(transport=transport, base_url="http://test") as client:
+                yield client
 
     @pytest.fixture
     async def auth_headers(self, es_client, sample_user_id, sample_api_key_id):

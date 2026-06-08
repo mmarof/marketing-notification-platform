@@ -8,14 +8,13 @@ from uuid import UUID
 
 import structlog
 
+from src.repositories.analytics_repository import AnalyticsRepository
 from src.schemas.analytics import (
     AnalyticsEventFilter,
     AnalyticsEventResponse,
     AnalyticsSummaryResponse,
     CampaignDetailResponse,
 )
-
-from src.repositories.analytics_repository import AnalyticsRepository
 
 logger = structlog.get_logger(__name__)
 

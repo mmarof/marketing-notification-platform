@@ -3,7 +3,7 @@ Base Elasticsearch repository with connection management.
 Provides shared functionality for all repositories.
 """
 
-from typing import Any, AsyncGenerator
+from typing import Any
 
 import structlog
 from elasticsearch import AsyncElasticsearch

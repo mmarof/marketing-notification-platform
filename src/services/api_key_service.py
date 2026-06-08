@@ -6,10 +6,9 @@ from uuid import UUID
 
 import structlog
 
-from src.core.exceptions import NotFoundError
-from src.models.api_keys import ApiKey, ApiKeyPermission
+from src.models.api_keys import ApiKey
 from src.repositories.api_key_repository import ApiKeyRepository
-from src.schemas.api_keys import ApiKeyResponse, ApiKeyListResponse, CreateApiKeyRequest
+from src.schemas.api_keys import ApiKeyListResponse, ApiKeyResponse, CreateApiKeyRequest
 
 logger = structlog.get_logger(__name__)
 

@@ -2,10 +2,9 @@
 Template management endpoints.
 """
 
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Query, status
 
 from src.core.dependencies import TenantContext
 from src.models.templates import TemplateStatus, TemplateType
@@ -28,19 +27,19 @@ router = APIRouter()
     summary="Create Template",
     description="""
     Create a new notification template.
-    
+
     Templates use Jinja2 syntax for variable substitution:
     - `{{ variable_name }}` for variable output
     - `{% if condition %}...{% endif %}` for conditionals
     - `{% for item in list %}...{% endfor %}` for loops
-    
+
     ## Example Email Template:
     ```html
     <h1>Hello {{ name }}</h1>
     <p>Your order {{ order_id }} has been confirmed.</p>
     <a href="{{ tracking_url }}">Track your order</a>
     ```
-    
+
     ## Example SMS Template:
     ```
     Hi {{ name }}, your code is {{ code }}. Valid for {{ validity_minutes }} minutes.
@@ -148,9 +147,11 @@ async def delete_template(
 async def render_template_preview(
     template_id: UUID,
     tenant: TenantContext,
-    variables: dict = {},
+    variables: dict | None = None,
 ) -> TemplateRenderResponse:
     """Render template preview."""
+    if variables is None:
+        variables = {}
     result = await template_service.render_template_preview(
         template_id=template_id,
         variables=variables,
@@ -170,8 +171,8 @@ async def validate_template_syntax(
     template_type: TemplateType = Query(default=TemplateType.EMAIL),
 ) -> dict:
     """Validate template syntax."""
-    from src.template_engine.engine import template_engine
     from src.core.exceptions import TemplateError
+    from src.template_engine.engine import template_engine
 
     try:
         if template_type == TemplateType.EMAIL:
