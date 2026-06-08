@@ -1,0 +1,65 @@
+[project]
+name = "marketing-notification-platform"
+version = "1.0.0"
+description = "Production-grade multi-tenant marketing notification SaaS platform"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "elasticsearch[async]>=8.15.0",
+    "aiosmtplib>=3.0.0",
+    "jinja2>=3.1.0",
+    "twilio>=9.0.0",
+    "redis>=5.0.0",
+    "httpx>=0.27.0",
+    "python-multipart>=0.0.12",
+    "bleach>=6.1.0",
+    "orjson>=3.10.0",
+    "structlog>=24.4.0",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib>=1.7.4",
+    "bcrypt>=4.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.27.0",
+    "testcontainers>=4.8.0",
+    "factory-boy>=3.3.0",
+    "ruff>=0.7.0",
+    "mypy>=1.11.0",
+    "pre-commit>=4.0.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-v --tb=short -x"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "A", "SIM", "RUF"
+]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+mnp-server = "src.main:main"
