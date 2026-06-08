@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 style="color: #1a1a1a;">{{ greeting | default('Hello') }} {{ name | default('there') }},</h2>
+
+<p>{{ message | default('We have an update for you.') }}</p>
+
+{% if cta_text and cta_url %}
+<div style="text-align: center; margin: 25px 0;">
+    <a href="{{ cta_url }}" class="btn">{{ cta_text }}</a>
+</div>
+{% endif %}
+
+{% if additional_content %}
+<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+    {{ additional_content | safe }}
+</div>
+{% endif %}
+{% endblock %}
