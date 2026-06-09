@@ -3,13 +3,14 @@ Integration tests for analytics API endpoints.
 Fixed version with proper client setup.
 """
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+from collections.abc import AsyncGenerator
 from unittest.mock import patch
 
-from src.main import app
-from src.config.settings import get_settings
+import pytest
+from httpx import ASGITransport, AsyncClient
 
+from src.config.settings import get_settings
+from src.main import app
 
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
@@ -30,17 +31,19 @@ class TestAnalyticsAPI:
         patch_rate_limiter,
     ) -> AsyncGenerator[AsyncClient, None]:
         """Create test client with auth and ES patches."""
-        with patch("src.main.settings", TEST_SETTINGS):
-            with patch("src.config.settings.get_settings", return_value=TEST_SETTINGS):
-                with patch("src.services.analytics_service.settings", TEST_SETTINGS):
-                    with patch("src.core.dependencies.settings", TEST_SETTINGS):
-                        transport = ASGITransport(app=app)
-                        async with AsyncClient(
-                            transport=transport,
-                            base_url="http://test",
-                            headers=create_test_api_key,
-                        ) as client:
-                            yield client
+        with (
+            patch("src.main.settings", TEST_SETTINGS),
+            patch("src.config.settings.get_settings", return_value=TEST_SETTINGS),
+            patch("src.services.analytics_service.settings", TEST_SETTINGS),
+            patch("src.core.dependencies.settings", TEST_SETTINGS),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=create_test_api_key,
+            ) as client:
+                yield client
 
     @pytest.mark.asyncio
     async def test_get_analytics_summary_empty(self, client: AsyncClient):
@@ -136,6 +139,7 @@ class TestAnalyticsAPI:
     async def test_get_campaign_detail_not_found(self, client: AsyncClient):
         """Test getting campaign detail for non-existent campaign."""
         from uuid import uuid4
+
         fake_campaign_id = str(uuid4())
         response = await client.get(f"/api/v1/analytics/campaign/{fake_campaign_id}")
         assert response.status_code == 404
@@ -144,7 +148,6 @@ class TestAnalyticsAPI:
     async def test_analytics_after_sending_notifications(
         self,
         client: AsyncClient,
-        sample_user_id: str,
     ):
         """Test that analytics reflect sent notifications."""
         # Send some notifications first
@@ -183,16 +186,18 @@ class TestAnalyticsAuth:
     @pytest.fixture
     async def unauth_client(self, es_index, patch_elasticsearch, patch_rate_limiter):
         """Create client without authentication."""
-        with patch("src.main.settings", TEST_SETTINGS):
-            with patch("src.config.settings.get_settings", return_value=TEST_SETTINGS):
-                with patch("src.services.analytics_service.settings", TEST_SETTINGS):
-                    with patch("src.core.dependencies.settings", TEST_SETTINGS):
-                        transport = ASGITransport(app=app)
-                        async with AsyncClient(
-                            transport=transport,
-                            base_url="http://test",
-                        ) as client:
-                            yield client
+        with (
+            patch("src.main.settings", TEST_SETTINGS),
+            patch("src.config.settings.get_settings", return_value=TEST_SETTINGS),
+            patch("src.services.analytics_service.settings", TEST_SETTINGS),
+            patch("src.core.dependencies.settings", TEST_SETTINGS),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+            ) as client:
+                yield client
 
     async def test_analytics_without_auth_fails(self, unauth_client: AsyncClient):
         """Test that analytics requires authentication."""
@@ -203,4 +208,3 @@ class TestAnalyticsAuth:
         """Test that events endpoint requires authentication."""
         response = await unauth_client.get("/api/v1/analytics/events")
         assert response.status_code == 401
-        

@@ -3,10 +3,12 @@ Integration tests for Elasticsearch repository operations.
 Fixed version with proper client and index handling.
 """
 
-import pytest
-from datetime import datetime
+import asyncio
 from uuid import uuid4
 
+import pytest
+
+from src.config.settings import get_settings
 from src.models.notifications import (
     Notification,
     NotificationChannel,
@@ -14,8 +16,6 @@ from src.models.notifications import (
     Recipient,
 )
 from src.repositories.notification_repository import NotificationRepository
-from src.config.settings import get_settings
-
 
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
@@ -147,13 +147,13 @@ class TestNotificationRepository:
         assert len(notifications) == 5
 
         # Filter by channel - email
-        email_notifs, email_total = await repository.get_notifications_by_user(
+        _email_notifs, email_total = await repository.get_notifications_by_user(
             sample_user_id, channel="email"
         )
         assert email_total == 3  # indices 0, 2, 4
 
         # Filter by channel - sms
-        sms_notifs, sms_total = await repository.get_notifications_by_user(
+        _sms_notifs, sms_total = await repository.get_notifications_by_user(
             sample_user_id, channel="sms"
         )
         assert sms_total == 2  # indices 1, 3
@@ -359,8 +359,6 @@ class TestNotificationRepository:
         sample_api_key_id: uuid4,
     ):
         """Test creating many notifications efficiently."""
-        import asyncio
-
         # Create 100 notifications
         tasks = []
         for i in range(100):
@@ -377,4 +375,3 @@ class TestNotificationRepository:
         # Verify count
         _, total = await repository.get_notifications_by_user(sample_user_id, page_size=200)
         assert total == 100
-        

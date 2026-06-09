@@ -4,9 +4,10 @@ Fixed version with proper async handling and ES patching.
 """
 
 import asyncio
+import contextlib
 import os
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -29,7 +30,7 @@ os.environ.setdefault("APP_DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-purposes-only-minimum-32")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
-from src.config.settings import get_settings, Settings
+from src.config.settings import get_settings
 
 # Force reload settings with test values
 get_settings.cache_clear()
@@ -97,10 +98,8 @@ async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
     yield client
 
     # Cleanup all test indices at end of session
-    try:
+    with contextlib.suppress(Exception):
         await client.indices.delete(index=f"{TEST_INDEX_PREFIX}*", ignore_unavailable=True)
-    except Exception:
-        pass
 
     await client.close()
 
@@ -127,10 +126,8 @@ async def es_index(es_client: AsyncElasticsearch):
 
     # Delete existing indices first (clean slate)
     for index_name in indices_to_create:
-        try:
+        with contextlib.suppress(Exception):
             await es_client.indices.delete(index=index_name, ignore_unavailable=True)
-        except Exception:
-            pass
 
     # Create indices with mappings
     for index_name, mapping in indices_to_create.items():
@@ -156,10 +153,8 @@ async def es_index(es_client: AsyncElasticsearch):
 
     # Cleanup after each test
     for index_name in indices_to_create:
-        try:
+        with contextlib.suppress(Exception):
             await es_client.indices.delete(index=index_name, ignore_unavailable=True)
-        except Exception:
-            pass
 
 
 @pytest.fixture
@@ -198,9 +193,11 @@ def patch_rate_limiter():
     mock_limiter = MagicMock()
     mock_limiter.check_rate_limit = AsyncMock(return_value=(True, None))
 
-    with patch("src.core.dependencies.rate_limiter", mock_limiter):
-        with patch("src.core.rate_limiter.RateLimiter", return_value=mock_limiter):
-            yield mock_limiter
+    with (
+        patch("src.core.dependencies.rate_limiter", mock_limiter),
+        patch("src.core.rate_limiter.RateLimiter", return_value=mock_limiter),
+    ):
+        yield mock_limiter
 
 
 @pytest.fixture

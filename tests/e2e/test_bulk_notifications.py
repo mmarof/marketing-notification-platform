@@ -3,14 +3,15 @@ End-to-end tests for bulk notification scenarios.
 Fixed version with proper imports and client setup.
 """
 
-import pytest
-from httpx import ASGITransport, AsyncClient
+from collections.abc import AsyncGenerator
 from unittest.mock import patch
 from uuid import uuid4
 
-from src.main import app
-from src.config.settings import get_settings
+import pytest
+from httpx import ASGITransport, AsyncClient
 
+from src.config.settings import get_settings
+from src.main import app
 
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
@@ -31,17 +32,19 @@ class TestBulkNotifications:
         patch_rate_limiter,
     ) -> AsyncGenerator[AsyncClient, None]:
         """Create authenticated test client."""
-        with patch("src.main.settings", TEST_SETTINGS):
-            with patch("src.config.settings.get_settings", return_value=TEST_SETTINGS):
-                with patch("src.services.notification_service.settings", TEST_SETTINGS):
-                    with patch("src.core.dependencies.settings", TEST_SETTINGS):
-                        transport = ASGITransport(app=app)
-                        async with AsyncClient(
-                            transport=transport,
-                            base_url="http://test",
-                            headers=create_test_api_key,
-                        ) as client:
-                            yield client
+        with (
+            patch("src.main.settings", TEST_SETTINGS),
+            patch("src.config.settings.get_settings", return_value=TEST_SETTINGS),
+            patch("src.services.notification_service.settings", TEST_SETTINGS),
+            patch("src.core.dependencies.settings", TEST_SETTINGS),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=create_test_api_key,
+            ) as client:
+                yield client
 
     @pytest.mark.asyncio
     async def test_bulk_email_send(self, client: AsyncClient):
@@ -227,4 +230,3 @@ class TestBulkNotifications:
         fake_id = str(uuid4())
         response = await client.post(f"/api/v1/notify/{fake_id}/retry")
         assert response.status_code == 404
-        

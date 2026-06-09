@@ -3,14 +3,15 @@ Integration tests for notification API endpoints.
 Fixed version with proper client setup and auth handling.
 """
 
-import pytest
-from httpx import ASGITransport, AsyncClient
-from unittest.mock import AsyncMock, MagicMock, patch
+from collections.abc import AsyncGenerator
+from unittest.mock import patch
 from uuid import uuid4
 
-from src.main import app
-from src.config.settings import get_settings
+import pytest
+from httpx import ASGITransport, AsyncClient
 
+from src.config.settings import get_settings
+from src.main import app
 
 # Ensure test settings are used
 TEST_SETTINGS = get_settings()
@@ -44,20 +45,21 @@ class TestNotificationsAPI:
         Create test HTTP client with all patches applied.
         es_index dependency ensures ES indices are created.
         """
-        # Patch settings in the main module
-        with patch("src.main.settings", TEST_SETTINGS):
-            with patch("src.config.settings.get_settings", return_value=TEST_SETTINGS):
-                with patch("src.services.notification_service.settings", TEST_SETTINGS):
-                    with patch("src.core.dependencies.settings", TEST_SETTINGS):
-                        transport = ASGITransport(app=app)
-                        async with AsyncClient(
-                            transport=transport,
-                            base_url="http://test",
-                            headers=auth_headers,
-                        ) as client:
-                            yield client
+        with (
+            patch("src.main.settings", TEST_SETTINGS),
+            patch("src.config.settings.get_settings", return_value=TEST_SETTINGS),
+            patch("src.services.notification_service.settings", TEST_SETTINGS),
+            patch("src.core.dependencies.settings", TEST_SETTINGS),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+                headers=auth_headers,
+            ) as client:
+                yield client
 
-    async def _send_notification(self, client: AsyncClient, payload: dict) -> dict:
+    async def _send_notification(self, client: AsyncClient, payload: dict) -> tuple:
         """Helper to send notification and return response data."""
         response = await client.post("/api/v1/notify", json=payload)
         return response, response.json() if response.status_code != 422 else response.text
@@ -251,16 +253,18 @@ class TestNotificationsAuth:
     @pytest.fixture
     async def unauth_client(self, es_index, patch_elasticsearch, patch_rate_limiter):
         """Create client without authentication."""
-        with patch("src.main.settings", TEST_SETTINGS):
-            with patch("src.config.settings.get_settings", return_value=TEST_SETTINGS):
-                with patch("src.services.notification_service.settings", TEST_SETTINGS):
-                    with patch("src.core.dependencies.settings", TEST_SETTINGS):
-                        transport = ASGITransport(app=app)
-                        async with AsyncClient(
-                            transport=transport,
-                            base_url="http://test",
-                        ) as client:
-                            yield client
+        with (
+            patch("src.main.settings", TEST_SETTINGS),
+            patch("src.config.settings.get_settings", return_value=TEST_SETTINGS),
+            patch("src.services.notification_service.settings", TEST_SETTINGS),
+            patch("src.core.dependencies.settings", TEST_SETTINGS),
+        ):
+            transport = ASGITransport(app=app)
+            async with AsyncClient(
+                transport=transport,
+                base_url="http://test",
+            ) as client:
+                yield client
 
     async def test_send_without_auth_fails(self, unauth_client: AsyncClient):
         """Test that sending without auth fails."""
@@ -288,4 +292,3 @@ class TestNotificationsAuth:
         """Test that listing without auth fails."""
         response = await unauth_client.get("/api/v1/notifications")
         assert response.status_code == 401
-        
