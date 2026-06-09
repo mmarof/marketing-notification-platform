@@ -2,12 +2,11 @@
 Integration tests for analytics API endpoints.
 """
 
-from unittest.mock import patch
-
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from src.main import app
+from src.repositories.base import get_elasticsearch_client
 
 
 @pytest.mark.asyncio
@@ -15,27 +14,23 @@ class TestAnalyticsAPI:
     """Integration tests for /v1/analytics endpoints."""
 
     @pytest.fixture
-    async def client(self, es_client, test_settings):
-        """Create test client with patched ES client and settings."""
-
-        with (
-            patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
-            patch("src.repositories.base._elasticsearch_client", es_client),
-            patch("src.config.settings.get_settings", return_value=test_settings),
-        ):
-            transport = ASGITransport(app=app)
-            async with AsyncClient(transport=transport, base_url="http://test") as client:
-                yield client
+    async def client(self, mock_elasticsearch_client):
+        """Create test client with globally patched ES client."""
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
 
     @pytest.fixture
-    async def auth_headers(self, es_client, sample_user_id, sample_api_key_id):
-        """Create valid authentication."""
+    async def auth_headers(self, mock_elasticsearch_client, sample_user_id, sample_api_key_id):
+        """Create valid authentication headers using the patched ES client."""
         import bcrypt
+
+        client = get_elasticsearch_client()  # returns the patched test client
 
         raw_key = "mnp_analytics_test_key"
         key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
 
-        await es_client.index(
+        await client.index(
             index="test_mnp_api_keys",
             id=str(sample_api_key_id),
             document={
@@ -54,18 +49,8 @@ class TestAnalyticsAPI:
 
         return {"X-API-Key": raw_key}
 
-    @pytest.mark.asyncio
-    async def test_get_analytics_summary(
-        self,
-        client: AsyncClient,
-        auth_headers: dict,
-        es_index,
-    ):
-        """Test getting analytics summary."""
-        response = await client.get(
-            "/api/v1/analytics/summary",
-            headers=auth_headers,
-        )
+    async def test_get_analytics_summary(self, client, auth_headers, es_index):
+        response = await client.get("/api/v1/analytics/summary", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "email" in data
@@ -74,39 +59,19 @@ class TestAnalyticsAPI:
         assert "total_sent" in data["overall"]
         assert "success_rate" in data["overall"]
 
-    @pytest.mark.asyncio
-    async def test_get_analytics_summary_with_date_range(
-        self,
-        client: AsyncClient,
-        auth_headers: dict,
-        es_index,
-    ):
-        """Test analytics summary with date range."""
+    async def test_get_analytics_summary_with_date_range(self, client, auth_headers, es_index):
         response = await client.get(
             "/api/v1/analytics/summary",
             headers=auth_headers,
-            params={
-                "start_date": "2024-01-01T00:00:00",
-                "end_date": "2024-12-31T23:59:59",
-            },
+            params={"start_date": "2024-01-01T00:00:00", "end_date": "2024-12-31T23:59:59"},
         )
         assert response.status_code == 200
         data = response.json()
         assert data["period"]["start"] == "2024-01-01T00:00:00"
         assert data["period"]["end"] == "2024-12-31T23:59:59"
 
-    @pytest.mark.asyncio
-    async def test_get_analytics_events(
-        self,
-        client: AsyncClient,
-        auth_headers: dict,
-        es_index,
-    ):
-        """Test getting analytics events."""
-        response = await client.get(
-            "/api/v1/analytics/events",
-            headers=auth_headers,
-        )
+    async def test_get_analytics_events(self, client, auth_headers, es_index):
+        response = await client.get("/api/v1/analytics/events", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert "events" in data
@@ -114,35 +79,15 @@ class TestAnalyticsAPI:
         assert "page" in data
         assert "total_pages" in data
 
-    @pytest.mark.asyncio
-    async def test_get_analytics_events_with_filters(
-        self,
-        client: AsyncClient,
-        auth_headers: dict,
-        es_index,
-    ):
-        """Test analytics events with filters."""
+    async def test_get_analytics_events_with_filters(self, client, auth_headers, es_index):
         response = await client.get(
             "/api/v1/analytics/events",
             headers=auth_headers,
-            params={
-                "channel": "email",
-                "status": "sent",
-                "page": 1,
-                "page_size": 10,
-                "sort_order": "desc",
-            },
+            params={"channel": "email", "status": "sent", "page": 1, "page_size": 10, "sort_order": "desc"},
         )
         assert response.status_code == 200
 
-    @pytest.mark.asyncio
-    async def test_get_delivery_stats(
-        self,
-        client: AsyncClient,
-        auth_headers: dict,
-        es_index,
-    ):
-        """Test getting delivery statistics."""
+    async def test_get_delivery_stats(self, client, auth_headers, es_index):
         response = await client.get(
             "/api/v1/analytics/delivery-stats",
             headers=auth_headers,

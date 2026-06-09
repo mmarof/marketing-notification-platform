@@ -2,14 +2,6 @@
 Pytest configuration and shared fixtures.
 """
 
-import os
-
-# Force test index prefix before any app imports
-os.environ["ELASTICSEARCH_INDEX_PREFIX"] = "test_mnp_"
-os.environ["SMTP_HOST"] = ""
-os.environ["TWILIO_ACCOUNT_SID"] = ""
-os.environ["TWILIO_AUTH_TOKEN"] = ""
-
 import asyncio
 import contextlib
 import os
@@ -21,10 +13,17 @@ import pytest
 import pytest_asyncio
 from elasticsearch import AsyncElasticsearch
 
+# Force test index prefix and mock provider environment variables
+# BEFORE any app imports to ensure the global settings object uses them.
+os.environ.setdefault("ELASTICSEARCH_INDEX_PREFIX", "test_mnp_")
+os.environ.setdefault("SMTP_HOST", "")
+os.environ.setdefault("TWILIO_ACCOUNT_SID", "")
+os.environ.setdefault("TWILIO_AUTH_TOKEN", "")
+
 from src.config.settings import Settings
 from src.core.middleware import api_key_id_ctx, request_id_ctx, user_id_ctx, workspace_id_ctx
 
-# Override settings for testing
+# Override settings for testing (optional, used by some fixtures)
 TEST_SETTINGS = Settings(
     app_name="TestApp",
     app_env="development",
@@ -45,7 +44,7 @@ TEST_SETTINGS = Settings(
 
 @pytest.fixture
 def test_settings():
-    """Return the test settings for patching."""
+    """Return the test settings for patching (if needed)."""
     return TEST_SETTINGS
 
 
@@ -66,7 +65,6 @@ async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
         ),
         request_timeout=30,
         verify_certs=False,
-        # Force compatibility with Elasticsearch 8.x
         headers={"accept": "application/vnd.elasticsearch+json; compatible-with=8"},
     )
 
@@ -94,7 +92,6 @@ async def es_index(es_client: AsyncElasticsearch):
     """Create test indices before each test and cleanup after."""
     prefix = "test_mnp_"
 
-    # Create indices with same mappings as production
     from src.repositories.base import (
         API_KEY_INDEX_MAPPING,
         NOTIFICATION_INDEX_MAPPING,
@@ -116,7 +113,6 @@ async def es_index(es_client: AsyncElasticsearch):
 
     yield
 
-    # Cleanup
     for suffix in ["notifications", "api_keys", "templates"]:
         with contextlib.suppress(Exception):
             await es_client.indices.delete(index=f"{prefix}{suffix}")
@@ -124,7 +120,7 @@ async def es_index(es_client: AsyncElasticsearch):
 
 @pytest.fixture
 def mock_elasticsearch_client(es_client: AsyncElasticsearch):
-    """Patch the global Elasticsearch client."""
+    """Patch the global Elasticsearch client for the entire test session."""
     with (
         patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
         patch("src.repositories.base._elasticsearch_client", es_client),
@@ -134,33 +130,27 @@ def mock_elasticsearch_client(es_client: AsyncElasticsearch):
 
 @pytest.fixture
 def sample_user_id() -> str:
-    """Generate a sample user ID."""
     return "user_test_12345"
 
 
 @pytest.fixture
 def sample_workspace_id() -> str:
-    """Generate a sample workspace ID."""
     return "workspace_test_12345"
 
 
 @pytest.fixture
 def sample_api_key_id() -> uuid4:
-    """Generate a sample API key ID."""
     return uuid4()
 
 
 @pytest.fixture
 def sample_template_id() -> uuid4:
-    """Generate a sample template ID."""
     return uuid4()
 
 
 @pytest.fixture
 def tenant_context(sample_user_id, sample_api_key_id, sample_workspace_id):
-    """Create a sample tenant context."""
     from src.schemas.api_keys import ApiKeyContext
-
     return ApiKeyContext(
         api_key_id=sample_api_key_id,
         user_id=sample_user_id,
@@ -173,7 +163,6 @@ def tenant_context(sample_user_id, sample_api_key_id, sample_workspace_id):
 
 @pytest.fixture
 def set_context_vars(sample_user_id, sample_api_key_id, sample_workspace_id):
-    """Set context variables for testing."""
     request_id_ctx.set("test-request-123")
     user_id_ctx.set(sample_user_id)
     api_key_id_ctx.set(str(sample_api_key_id))
@@ -187,7 +176,6 @@ def set_context_vars(sample_user_id, sample_api_key_id, sample_workspace_id):
 
 @pytest.fixture
 def sample_email_template_content() -> str:
-    """Sample email template content."""
     return """
     <h1>Hello {{ name }},</h1>
     <p>Welcome to {{ company }}!</p>
@@ -203,13 +191,11 @@ def sample_email_template_content() -> str:
 
 @pytest.fixture
 def sample_sms_template_content() -> str:
-    """Sample SMS template content."""
     return "Hi {{ name }}, your {{ company }} verification code is {{ code }}. Valid for {{ validity }} mins."
 
 
 @pytest.fixture
 def sample_notification_request(sample_template_id) -> dict:
-    """Sample notification request payload."""
     return {
         "type": "email",
         "recipients": ["user1@example.com", "user2@example.com"],
@@ -224,7 +210,6 @@ def sample_notification_request(sample_template_id) -> dict:
 
 @pytest.fixture
 def sample_sms_notification_request() -> dict:
-    """Sample SMS notification request payload."""
     return {
         "type": "sms",
         "recipients": ["+1234567890", "+0987654321"],
