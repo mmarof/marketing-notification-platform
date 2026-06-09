@@ -41,6 +41,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "-v --tb=short -x"
 filterwarnings = ["ignore::DeprecationWarning"]
+asyncio_default_fixture_loop_scope = "session"
 
 [tool.ruff]
 target-version = "py312"

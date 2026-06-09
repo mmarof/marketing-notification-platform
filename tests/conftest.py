@@ -6,8 +6,8 @@ Fixed version with proper async handling and ES patching.
 import asyncio
 import contextlib
 import os
-from collections.abc import AsyncGenerator
 from datetime import datetime
+from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -30,7 +30,7 @@ os.environ.setdefault("APP_DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-purposes-only-minimum-32")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
-from src.config.settings import get_settings
+from src.config.settings import get_settings, Settings  # noqa: E402
 
 # Force reload settings with test values
 get_settings.cache_clear()
@@ -46,16 +46,9 @@ TEST_INDEX_PREFIX = "test_mnp_"
 
 
 @pytest.fixture(scope="session")
-def event_loop_policy():
-    """Use default event loop policy."""
-    return asyncio.DefaultEventLoopPolicy()
-
-
-@pytest.fixture(scope="session")
 def event_loop():
-    """Create event loop for the test session."""
-    policy = asyncio.DefaultEventLoopPolicy()
-    loop = policy.new_event_loop()
+    """Create and yield a single event loop for the entire test session."""
+    loop = asyncio.new_event_loop()
     yield loop
     loop.close()
 
@@ -66,7 +59,7 @@ def settings():
     return TEST_SETTINGS
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
     """
     Create and yield Elasticsearch client for testing.
@@ -104,13 +97,13 @@ async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
     await client.close()
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def es_index(es_client: AsyncElasticsearch):
     """
     Create fresh test indices before each test and cleanup after.
     This fixture MUST be used by integration tests that write to ES.
     """
-    from src.repositories.base import (
+    from src.repositories.base import (  # noqa: E402
         API_KEY_INDEX_MAPPING,
         AUDIT_LOG_INDEX_MAPPING,
         NOTIFICATION_INDEX_MAPPING,
@@ -165,24 +158,19 @@ def patch_elasticsearch(es_client: AsyncElasticsearch):
     """
     patches = []
 
-    # Patch the global client in base repository
     p1 = patch("src.repositories.base._elasticsearch_client", es_client)
     patches.append(p1)
 
-    # Patch the getter function
     p2 = patch("src.repositories.base.get_elasticsearch_client", return_value=es_client)
     patches.append(p2)
 
-    # Patch settings to use test index prefix
     p3 = patch("src.repositories.base.settings", TEST_SETTINGS)
     patches.append(p3)
 
-    # Start all patches
     mocks = [p.start() for p in patches]
 
     yield es_client
 
-    # Stop all patches in reverse order
     for m in reversed(mocks):
         m.stop()
 
@@ -233,7 +221,7 @@ def sample_raw_api_key() -> str:
 @pytest.fixture
 def tenant_context(sample_user_id, sample_api_key_id, sample_workspace_id):
     """Create a sample tenant context for service-level tests."""
-    from src.schemas.api_keys import ApiKeyContext
+    from src.schemas.api_keys import ApiKeyContext  # noqa: E402
 
     return ApiKeyContext(
         api_key_id=sample_api_key_id,
@@ -245,7 +233,7 @@ def tenant_context(sample_user_id, sample_api_key_id, sample_workspace_id):
     )
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(loop_scope="session")
 async def create_test_api_key(
     es_client: AsyncElasticsearch,
     sample_user_id: str,
@@ -256,7 +244,7 @@ async def create_test_api_key(
     Create a test API key in Elasticsearch.
     Returns headers dict ready for HTTP requests.
     """
-    import bcrypt
+    import bcrypt  # noqa: E402
 
     key_hash = bcrypt.hashpw(sample_raw_api_key.encode(), bcrypt.gensalt()).decode()
     key_prefix = sample_raw_api_key[:8] + "..."
