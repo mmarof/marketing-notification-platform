@@ -35,6 +35,12 @@ TEST_SETTINGS = Settings(
 )
 
 
+@pytest.fixture
+def test_settings():
+    """Return the test settings for patching."""
+    return TEST_SETTINGS
+
+
 @pytest.fixture(scope="session")
 def settings():
     """Get test settings."""
@@ -52,6 +58,8 @@ async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
         ),
         request_timeout=30,
         verify_certs=False,
+        # Force compatibility with Elasticsearch 8.x
+        headers={"accept": "application/vnd.elasticsearch+json; compatible-with=8"},
     )
 
     # Wait for Elasticsearch to be ready

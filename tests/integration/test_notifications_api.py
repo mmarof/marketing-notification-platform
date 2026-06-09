@@ -2,6 +2,7 @@
 Integration tests for notification API endpoints.
 """
 
+from unittest.mock import patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -14,13 +15,15 @@ class TestNotificationsAPI:
     """Integration tests for /v1/notify endpoints."""
 
     @pytest.fixture
-    async def client(self, es_client):
-        """Create test client with ES patched."""
-        from unittest.mock import patch
+    async def client(self, es_client, test_settings):
+        """Create test client with patched ES client and settings."""
 
         with (
             patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
             patch("src.repositories.base._elasticsearch_client", es_client),
+            patch("src.services.api_key_service.get_elasticsearch_client", return_value=es_client),
+            patch("src.services.notification_service.get_elasticsearch_client", return_value=es_client),
+            patch("src.config.settings.get_settings", return_value=test_settings),
         ):
             transport = ASGITransport(app=app)
             async with AsyncClient(transport=transport, base_url="http://test") as client:
