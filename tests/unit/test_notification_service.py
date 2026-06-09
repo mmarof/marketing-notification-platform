@@ -2,7 +2,6 @@
 Unit tests for notification service.
 """
 
-from datetime import datetime
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
@@ -210,28 +209,22 @@ class TestNotificationService:
         mock_notification_repo,
         sample_user_id,
         sample_api_key_id,
-        sample_template_id
+        sample_template_id,
     ):
         """Test notification sending with template (mocked)."""
-        from src.models.templates import Template
+        from unittest.mock import AsyncMock, patch
 
-        # Create a mock template
-        mock_template = Template(
-            template_id=sample_template_id,
-            name="Test Template",
-            template_type="email",
-            user_id=sample_user_id,
-            content="<h1>Hello {{ name }}</h1>",
-            subject="Hello {{ name }}",
-            status="active",
-            variables=[],
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
+        from src.models.notifications import NotificationStatus
 
-        # Patch the template repository's get_template method
-        with patch.object(service._template_repo, "get_template", new_callable=AsyncMock) as mock_get:
-            mock_get.return_value = mock_template
+        # Mock the template content that _get_template_content would return
+        mock_template_content = {
+            "content": "<h1>Hello {{ name }}</h1>",
+            "subject": "Hello {{ name }}",
+            "text_content": "Hello {{ name }}",
+        }
+
+        with patch.object(service, "_get_template_content", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_template_content
 
             request = NotificationRequest(
                 type="email",
