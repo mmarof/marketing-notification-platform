@@ -2,11 +2,15 @@
 Integration tests for analytics API endpoints.
 """
 
+from unittest.mock import patch
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from src.main import app
 from src.repositories.base import get_elasticsearch_client
+from src.schemas.api_keys import CreateApiKeyRequest
+from src.services.api_key_service import ApiKeyService
 
 
 @pytest.mark.asyncio
@@ -21,31 +25,19 @@ class TestAnalyticsAPI:
             yield client
 
     @pytest.fixture
-    async def auth_headers(self, mock_elasticsearch_client, sample_user_id, sample_api_key_id):
-        """Create valid authentication headers using the patched ES client."""
-        import bcrypt
+    async def auth_headers(self, mock_elasticsearch_client, sample_user_id):
+        """Create valid authentication headers using the real ApiKeyService."""
+        # Get the patched ES client (the same one used by the app)
+        es_client = get_elasticsearch_client()
 
-        client = get_elasticsearch_client()  # returns the patched test client
-
-        raw_key = "mnp_analytics_test_key"
-        key_hash = bcrypt.hashpw(raw_key.encode(), bcrypt.gensalt()).decode()
-
-        await client.index(
-            index="test_mnp_api_keys",
-            id=str(sample_api_key_id),
-            document={
-                "api_key_id": str(sample_api_key_id),
-                "user_id": sample_user_id,
-                "name": "Analytics Key",
-                "permissions": ["view_analytics"],
-                "key_hash": key_hash,
-                "key_prefix": "mnp_ana...",
-                "is_active": True,
-                "created_at": "2024-01-01T00:00:00",
-                "metadata": {},
-            },
-            refresh="wait_for",
-        )
+        # Create API key service and patch its repository client
+        service = ApiKeyService()
+        with patch.object(service._repository, '_client', es_client):
+            create_request = CreateApiKeyRequest(
+                name="Analytics Test Key",
+                permissions=["view_analytics"],
+            )
+            _, raw_key = await service.create_api_key(create_request, sample_user_id)
 
         return {"X-API-Key": raw_key}
 
@@ -83,7 +75,13 @@ class TestAnalyticsAPI:
         response = await client.get(
             "/api/v1/analytics/events",
             headers=auth_headers,
-            params={"channel": "email", "status": "sent", "page": 1, "page_size": 10, "sort_order": "desc"},
+            params={
+                "channel": "email",
+                "status": "sent",
+                "page": 1,
+                "page_size": 10,
+                "sort_order": "desc",
+            },
         )
         assert response.status_code == 200
 
