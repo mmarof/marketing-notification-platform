@@ -6,8 +6,8 @@ Fixed version with proper async handling and ES patching.
 import asyncio
 import contextlib
 import os
+from collections.abc import AsyncGenerator
 from datetime import datetime
-from typing import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -30,7 +30,7 @@ os.environ.setdefault("APP_DEBUG", "true")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-purposes-only-minimum-32")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
 
-from src.config.settings import get_settings, Settings  # noqa: E402
+from src.config.settings import get_settings
 
 # Force reload settings with test values
 get_settings.cache_clear()
@@ -103,7 +103,7 @@ async def es_index(es_client: AsyncElasticsearch):
     Create fresh test indices before each test and cleanup after.
     This fixture MUST be used by integration tests that write to ES.
     """
-    from src.repositories.base import (  # noqa: E402
+    from src.repositories.base import (
         API_KEY_INDEX_MAPPING,
         AUDIT_LOG_INDEX_MAPPING,
         NOTIFICATION_INDEX_MAPPING,
@@ -221,7 +221,7 @@ def sample_raw_api_key() -> str:
 @pytest.fixture
 def tenant_context(sample_user_id, sample_api_key_id, sample_workspace_id):
     """Create a sample tenant context for service-level tests."""
-    from src.schemas.api_keys import ApiKeyContext  # noqa: E402
+    from src.schemas.api_keys import ApiKeyContext
 
     return ApiKeyContext(
         api_key_id=sample_api_key_id,
@@ -244,7 +244,7 @@ async def create_test_api_key(
     Create a test API key in Elasticsearch.
     Returns headers dict ready for HTTP requests.
     """
-    import bcrypt  # noqa: E402
+    import bcrypt
 
     key_hash = bcrypt.hashpw(sample_raw_api_key.encode(), bcrypt.gensalt()).decode()
     key_prefix = sample_raw_api_key[:8] + "..."
