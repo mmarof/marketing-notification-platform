@@ -70,7 +70,7 @@ class DatabaseTemplateLoader(BaseLoader):
         # Try file system first
         template_path = self._file_templates_path / template
         if template_path.exists():
-            with open(template_path, "r", encoding="utf-8") as f:
+            with open(template_path, encoding="utf-8") as f:
                 source = f.read()
             return source, str(template_path), lambda: source
 
@@ -173,7 +173,7 @@ class TemplateEngine:
                 error=str(e),
                 template_length=len(template_content),
             )
-            raise TemplateError(f"Failed to render email template: {str(e)}")
+            raise TemplateError(f"Failed to render email template: {e!s}") from e
 
     def render_sms(self, template_content: str, variables: dict[str, Any]) -> str:
         """Render an SMS template with variable substitution."""
@@ -194,7 +194,9 @@ class TemplateEngine:
 
         except Exception as e:
             logger.error("sms_render_failed", error=str(e))
-            raise TemplateError(f"Failed to render SMS template: {str(e)}")
+            raise TemplateError(
+                f"Failed to render SMS template: {e!s}"
+            ) from e
 
     def extract_variables(self, template_content: str) -> list[str]:
         """Extract variable names from a template."""

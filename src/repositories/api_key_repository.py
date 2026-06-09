@@ -9,7 +9,7 @@ from uuid import UUID
 import bcrypt
 
 from src.config.settings import get_settings
-from src.core.exceptions import AuthenticationError, NotFoundError
+from src.core.exceptions import NotFoundError
 from src.models.api_keys import ApiKey, ApiKeyPermission
 from src.repositories.base import BaseRepository
 from src.schemas.api_keys import ApiKeyContext

@@ -2,9 +2,10 @@
 Unit tests for notification service.
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+import pytest
 
 from src.models.notifications import NotificationChannel, NotificationStatus
 from src.schemas.notifications import NotificationRequest, RecipientInput
@@ -209,37 +210,29 @@ class TestNotificationService:
         sample_user_id,
         sample_api_key_id,
         sample_template_id,
-        es_client,
     ):
-        """Test notification sending with template."""
-        # First, create a template in ES
-        template_doc = {
-            "template_id": str(sample_template_id),
-            "name": "Test Template",
-            "template_type": "email",
-            "user_id": sample_user_id,
+        """Test notification sending with template (mocked)."""
+        from unittest.mock import AsyncMock, patch
+
+        from src.models.notifications import NotificationStatus
+
+        # Mock the template content that _get_template_content would return
+        mock_template_content = {
             "content": "<h1>Hello {{ name }}</h1>",
             "subject": "Hello {{ name }}",
-            "status": "active",
-            "variables": [],
-            "created_at": "2024-01-01T00:00:00",
-            "updated_at": "2024-01-01T00:00:00",
+            "text_content": "Hello {{ name }}",
         }
-        await es_client.index(
-            index="test_mnp_templates",
-            id=str(sample_template_id),
-            document=template_doc,
-            refresh="wait_for",
-        )
 
-        request = NotificationRequest(
-            type="email",
-            recipients=["user@example.com"],
-            template_id=sample_template_id,
-            variables={"name": "John"},
-        )
+        with patch.object(service, "_get_template_content", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_template_content
 
-        with patch("src.repositories.base.get_elasticsearch_client", return_value=es_client):
+            request = NotificationRequest(
+                type="email",
+                recipients=["user@example.com"],
+                template_id=sample_template_id,
+                variables={"name": "John"},
+            )
+
             notification = await service.send_notification(
                 request=request,
                 user_id=sample_user_id,
@@ -248,3 +241,4 @@ class TestNotificationService:
 
         assert notification is not None
         assert notification.status == NotificationStatus.SENT
+        mock_get.assert_called_once_with(sample_template_id, sample_user_id)

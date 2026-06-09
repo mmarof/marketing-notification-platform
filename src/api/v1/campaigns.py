@@ -3,10 +3,9 @@ Campaign and analytics endpoints.
 """
 
 from datetime import datetime
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 
 from src.core.dependencies import TenantContext
 from src.schemas.analytics import (
@@ -26,7 +25,7 @@ router = APIRouter()
     summary="Get Analytics Summary",
     description="""
     Get aggregated analytics summary for the authenticated user.
-    
+
     Returns metrics including:
     - Total emails/SMS sent
     - Delivery rates

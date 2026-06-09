@@ -4,7 +4,7 @@ Unit tests for the template engine.
 
 import pytest
 
-from src.template_engine.engine import TemplateEngine, DEFAULT_EMAIL_LAYOUT
+from src.template_engine.engine import DEFAULT_EMAIL_LAYOUT, TemplateEngine
 
 
 class TestTemplateEngine:

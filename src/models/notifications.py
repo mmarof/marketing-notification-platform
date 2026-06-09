@@ -4,14 +4,12 @@ Represents the core business entities for notifications.
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
 
-
-class NotificationChannel(str, Enum):
+class NotificationChannel(StrEnum):
     """Supported notification channels."""
 
     EMAIL = "email"
@@ -19,7 +17,7 @@ class NotificationChannel(str, Enum):
     BOTH = "both"
 
 
-class NotificationStatus(str, Enum):
+class NotificationStatus(StrEnum):
     """Notification lifecycle states."""
 
     QUEUED = "queued"
@@ -32,7 +30,7 @@ class NotificationStatus(str, Enum):
     UNSUBSCRIBED = "unsubscribed"
 
 
-class EmailMode(str, Enum):
+class EmailMode(StrEnum):
     """Email content rendering modes."""
 
     RAW_HTML = "raw_html"
@@ -55,7 +53,7 @@ class Recipient:
         self.variables = variables or {}
         self.metadata = metadata or {}
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "email": self.email,
             "phone": self.phone,
@@ -64,12 +62,12 @@ class Recipient:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "Recipient":
+    def from_dict(cls, data: dict[str, Any]) -> "Recipient":
         return cls(
             email=data.get("email"),
             phone=data.get("phone"),
-            variables=data.get("variables"),
-            metadata=data.get("metadata"),
+            variables=data.get("variables") or {},
+            metadata=data.get("metadata") or {},
         )
 
     @classmethod
@@ -174,8 +172,8 @@ class Notification:
             text_content=doc.get("text_content"),
             sms_content=doc.get("sms_content"),
             email_mode=EmailMode(doc.get("email_mode", "template")),
-            global_variables=doc.get("global_variables"),
-            metadata=doc.get("metadata"),
+            global_variables=doc.get("global_variables") or {},
+            metadata=doc.get("metadata") or {},
         )
         notification.status = NotificationStatus(doc.get("status", "queued"))
         notification.provider_responses = doc.get("provider_responses", {})

@@ -3,19 +3,19 @@ Template domain models.
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 
-class TemplateType(str, Enum):
+class TemplateType(StrEnum):
     """Template channel types."""
 
     EMAIL = "email"
     SMS = "sms"
 
 
-class TemplateStatus(str, Enum):
+class TemplateStatus(StrEnum):
     """Template lifecycle states."""
 
     DRAFT = "draft"

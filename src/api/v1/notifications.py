@@ -2,14 +2,11 @@
 Notification sending and retrieval endpoints.
 """
 
-from datetime import datetime
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Query, status
 
 from src.core.dependencies import TenantContext
-from src.models.notifications import NotificationStatus
 from src.schemas.notifications import (
     NotificationDetailResponse,
     NotificationRequest,
@@ -27,12 +24,12 @@ router = APIRouter()
     summary="Send Notification",
     description="""
     Send a notification through one or more channels.
-    
+
     Supports three modes:
     - **Raw HTML**: Provide `html` field directly
     - **Template**: Provide `template_id` to use a stored template
     - **Hybrid**: Provide both for template with overrides
-    
+
     ## Example - Send email with template:
     ```json
     {
@@ -42,7 +39,7 @@ router = APIRouter()
         "variables": {"name": "John", "code": "123456"}
     }
     ```
-    
+
     ## Example - Send SMS:
     ```json
     {

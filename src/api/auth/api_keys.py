@@ -2,13 +2,11 @@
 API Key management endpoints.
 """
 
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
 from src.core.dependencies import TenantContext
-from src.models.api_keys import ApiKeyPermission
 from src.schemas.api_keys import (
     ApiKeyCreatedResponse,
     ApiKeyListResponse,

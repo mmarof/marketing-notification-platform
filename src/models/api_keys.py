@@ -3,12 +3,12 @@ API Key domain models.
 """
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
 
-class ApiKeyPermission(str, Enum):
+class ApiKeyPermission(StrEnum):
     """API key permission levels."""
 
     READ_ONLY = "read_only"

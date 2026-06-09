@@ -2,7 +2,6 @@
 Twilio SMS provider implementation.
 """
 
-from typing import Any
 
 import structlog
 
@@ -31,11 +30,11 @@ class TwilioSMSProvider(BaseSMSProvider):
                 from twilio.rest import Client
 
                 self._client = Client(self._account_sid, self._auth_token)
-            except ImportError:
+            except ImportError as e:
                 raise ProviderError(
                     "Twilio package not installed. Install with: pip install twilio",
                     provider="twilio",
-                )
+                ) from e
         return self._client
 
     async def send(self, message: SMSMessage) -> ProviderResponse:

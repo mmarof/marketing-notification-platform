@@ -2,9 +2,10 @@
 Unit tests for API key service.
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+import pytest
 
 from src.models.api_keys import ApiKeyPermission
 from src.schemas.api_keys import CreateApiKeyRequest
@@ -36,8 +37,8 @@ class TestApiKeyService:
     ):
         """Test API key creation."""
         with patch.object(service._repository, "create_api_key", new_callable=AsyncMock) as mock_create:
+
             from src.models.api_keys import ApiKey
-            from datetime import datetime
 
             mock_api_key = ApiKey(
                 user_id=sample_user_id,
@@ -63,8 +64,9 @@ class TestApiKeyService:
     ):
         """Test listing API keys."""
         with patch.object(service._repository, "list_api_keys", new_callable=AsyncMock) as mock_list:
-            from src.models.api_keys import ApiKey
             from datetime import datetime
+
+            from src.models.api_keys import ApiKey
 
             mock_keys = [
                 ApiKey(

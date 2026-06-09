@@ -11,7 +11,7 @@ from uuid import UUID
 import structlog
 
 from src.config.settings import get_settings
-from src.core.exceptions import ProviderError, ValidationError
+from src.core.exceptions import ValidationError
 from src.models.notifications import (
     EmailMode,
     Notification,
@@ -167,7 +167,7 @@ class NotificationService:
             if not template_content:
                 raise ValidationError("Template ID required for hybrid mode")
             # Render template first, then override with provided HTML
-            base_html = template_engine.render_email(
+            template_engine.render_email(
                 template_content["content"],
                 variables,
                 layout=DEFAULT_EMAIL_LAYOUT,
