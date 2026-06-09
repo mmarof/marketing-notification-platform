@@ -79,7 +79,7 @@ class TimingMiddleware(BaseHTTPMiddleware):
                 method=method,
                 path=path,
                 duration_ms=round(duration_ms, 2),
-                status_code=getattr(response, "status_code", "unknown"),
+                status_code=getattr(response, "status_code", "unknown") if 'response' in locals() else "unknown",
             )
 
 
