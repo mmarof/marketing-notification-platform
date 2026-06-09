@@ -36,20 +36,12 @@ TEST_SETTINGS = Settings(
 
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """Create event loop for the test session."""
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.fixture(scope="session")
 def settings():
     """Get test settings."""
     return TEST_SETTINGS
 
 
-@pytest_asyncio.fixture(scope="session")
+@pytest_asyncio.fixture(scope="function")
 async def es_client() -> AsyncGenerator[AsyncElasticsearch, None]:
     """Create and yield Elasticsearch client for testing."""
     client = AsyncElasticsearch(
