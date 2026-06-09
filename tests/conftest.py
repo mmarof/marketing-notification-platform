@@ -2,6 +2,14 @@
 Pytest configuration and shared fixtures.
 """
 
+import os
+
+# Force test index prefix before any app imports
+os.environ["ELASTICSEARCH_INDEX_PREFIX"] = "test_mnp_"
+os.environ["SMTP_HOST"] = ""
+os.environ["TWILIO_ACCOUNT_SID"] = ""
+os.environ["TWILIO_AUTH_TOKEN"] = ""
+
 import asyncio
 import contextlib
 import os
