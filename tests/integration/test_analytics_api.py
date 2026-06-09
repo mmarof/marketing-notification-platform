@@ -15,7 +15,6 @@ from src.main import app
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
 TEST_SETTINGS.rate_limit.enabled = False
-TEST_SETTINGS.use_mock_providers = True
 
 
 @pytest.mark.asyncio
@@ -56,7 +55,6 @@ class TestAnalyticsAPI:
         assert "overall" in data
         assert "total_sent" in data["overall"]
         assert "success_rate" in data["overall"]
-        # Empty state
         assert data["overall"]["total_sent"] == 0
 
     @pytest.mark.asyncio
@@ -150,7 +148,6 @@ class TestAnalyticsAPI:
         client: AsyncClient,
     ):
         """Test that analytics reflect sent notifications."""
-        # Send some notifications first
         await client.post("/api/v1/notify", json={
             "type": "email",
             "recipients": ["user1@example.com", "user2@example.com"],
@@ -164,18 +161,14 @@ class TestAnalyticsAPI:
             "sms_content": "Test SMS",
         })
 
-        # Check summary includes the sent notifications
         response = await client.get("/api/v1/analytics/summary")
         assert response.status_code == 200
         data = response.json()
-        # At minimum, we should have some total
-        assert data["overall"]["total_sent"] >= 0  # May be 0 if ES hasn't refreshed
+        assert data["overall"]["total_sent"] >= 0
 
-        # Check events list
         events_response = await client.get("/api/v1/analytics/events")
         assert events_response.status_code == 200
         events_data = events_response.json()
-        # Events should exist (may need refresh)
         assert "events" in events_data
 
 

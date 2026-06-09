@@ -16,7 +16,6 @@ from src.main import app
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
 TEST_SETTINGS.rate_limit.enabled = False
-TEST_SETTINGS.use_mock_providers = True
 
 
 @pytest.mark.asyncio
@@ -100,15 +99,12 @@ class TestBulkNotifications:
             assert response.status_code == 202, f"Batch {batch} failed: {response.text}"
             notification_ids.append(response.json()["notification_id"])
 
-        # Verify all notifications are listed
         list_response = await client.get("/api/v1/notifications", params={"page_size": 100})
         assert list_response.status_code == 200
         data = list_response.json()
         assert data["total"] >= 5
 
-        # Verify campaign analytics
         campaign_response = await client.get(f"/api/v1/analytics/campaign/{campaign_id}")
-        # May be 404 if ES hasn't refreshed, or 200 with data
         assert campaign_response.status_code in (200, 404)
 
     @pytest.mark.asyncio
@@ -131,8 +127,8 @@ class TestBulkNotifications:
         recipients = [
             {"email": "email1@example.com", "phone": "+1234567890"},
             {"email": "email2@example.com", "phone": "+0987654321"},
-            {"email": "email3@example.com"},  # Email only
-            {"phone": "+1111111111"},  # SMS only
+            {"email": "email3@example.com"},
+            {"phone": "+1111111111"},
         ]
 
         response = await client.post("/api/v1/notify", json={
@@ -151,7 +147,6 @@ class TestBulkNotifications:
     @pytest.mark.asyncio
     async def test_bulk_at_max_limit(self, client: AsyncClient):
         """Test sending exactly at the maximum recipient limit."""
-        # Max is 10,000
         recipients = [f"max{i}@example.com" for i in range(10000)]
 
         response = await client.post("/api/v1/notify", json={
@@ -167,7 +162,6 @@ class TestBulkNotifications:
     @pytest.mark.asyncio
     async def test_bulk_exceeds_limit_fails(self, client: AsyncClient):
         """Test that exceeding the recipient limit fails validation."""
-        # Exceed max of 10,000
         recipients = [f"over{i}@example.com" for i in range(10001)]
 
         response = await client.post("/api/v1/notify", json={
@@ -199,7 +193,6 @@ class TestBulkNotifications:
     @pytest.mark.asyncio
     async def test_bulk_analytics_reflect_sends(self, client: AsyncClient):
         """Test that analytics reflect bulk sends."""
-        # Send bulk email
         await client.post("/api/v1/notify", json={
             "type": "email",
             "recipients": [f"analytics{i}@example.com" for i in range(50)],
@@ -207,26 +200,21 @@ class TestBulkNotifications:
             "subject": "Analytics Bulk",
         })
 
-        # Send bulk SMS
         await client.post("/api/v1/notify", json={
             "type": "sms",
             "recipients": [f"+123456{i:04d}" for i in range(30)],
             "sms_content": "Analytics SMS",
         })
 
-        # Check summary
         summary_response = await client.get("/api/v1/analytics/summary")
         assert summary_response.status_code == 200
         summary = summary_response.json()
-        # Verify structure (values may vary based on ES refresh)
         assert "email" in summary
         assert "sms" in summary
 
     @pytest.mark.asyncio
     async def test_retry_failed_notification(self, client: AsyncClient):
         """Test retrying a notification (mock scenario)."""
-        # In production, this would require an actual failed notification
-        # For now, test that the endpoint exists and handles not-found
         fake_id = str(uuid4())
         response = await client.post(f"/api/v1/notify/{fake_id}/retry")
         assert response.status_code == 404

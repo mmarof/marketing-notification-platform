@@ -17,7 +17,6 @@ from src.main import app
 TEST_SETTINGS = get_settings()
 TEST_SETTINGS.elasticsearch.index_prefix = "test_mnp_"
 TEST_SETTINGS.rate_limit.enabled = False
-TEST_SETTINGS.use_mock_providers = True
 
 
 @pytest.mark.asyncio
@@ -132,7 +131,6 @@ class TestNotificationsAPI:
             "updated_at": "2024-01-01T00:00:00",
         }
 
-        # Get the ES client from the es_index fixture (it yields the client)
         from src.repositories.base import get_elasticsearch_client
         es_client = get_elasticsearch_client()
         await es_client.index(
@@ -174,7 +172,6 @@ class TestNotificationsAPI:
     @pytest.mark.asyncio
     async def test_get_notification(self, client: AsyncClient):
         """Test retrieving a notification by ID."""
-        # First send a notification
         send_response = await client.post("/api/v1/notify", json={
             "type": "email",
             "recipients": ["user@example.com"],
@@ -184,7 +181,6 @@ class TestNotificationsAPI:
         assert send_response.status_code == 202
         notification_id = send_response.json()["notification_id"]
 
-        # Then retrieve it
         get_response = await client.get(f"/api/v1/notify/{notification_id}")
         assert get_response.status_code == 200
         data = get_response.json()
@@ -202,7 +198,6 @@ class TestNotificationsAPI:
     @pytest.mark.asyncio
     async def test_list_notifications(self, client: AsyncClient):
         """Test listing notifications."""
-        # Send a few notifications
         for i in range(3):
             response = await client.post("/api/v1/notify", json={
                 "type": "email",
