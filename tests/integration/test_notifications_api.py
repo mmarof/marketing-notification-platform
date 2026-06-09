@@ -2,13 +2,10 @@
 Integration tests for notification API endpoints.
 """
 
-from unittest.mock import patch
-
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from src.main import app
-from src.repositories.base import get_elasticsearch_client
 from src.schemas.api_keys import CreateApiKeyRequest
 from src.services.api_key_service import ApiKeyService
 
@@ -27,14 +24,12 @@ class TestNotificationsAPI:
     @pytest.fixture
     async def auth_headers(self, mock_elasticsearch_client, sample_user_id):
         """Create valid authentication headers using the real ApiKeyService."""
-        es_client = get_elasticsearch_client()
         service = ApiKeyService()
-        with patch.object(service._repository, '_client', es_client):
-            create_request = CreateApiKeyRequest(
-                name="Notification Test Key",
-                permissions=["send_notifications", "view_analytics", "manage_templates"],
-            )
-            _, raw_key = await service.create_api_key(create_request, sample_user_id)
+        create_request = CreateApiKeyRequest(
+            name="Notification Test Key",
+            permissions=["send_notifications", "view_analytics", "manage_templates"],
+        )
+        _, raw_key = await service.create_api_key(create_request, sample_user_id)
         return {"X-API-Key": raw_key}
 
     async def test_send_email_notification_no_auth(self, client):
