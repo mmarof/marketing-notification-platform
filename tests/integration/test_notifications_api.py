@@ -21,8 +21,6 @@ class TestNotificationsAPI:
         with (
             patch("src.repositories.base.get_elasticsearch_client", return_value=es_client),
             patch("src.repositories.base._elasticsearch_client", es_client),
-            patch("src.services.api_key_service.get_elasticsearch_client", return_value=es_client),
-            patch("src.services.notification_service.get_elasticsearch_client", return_value=es_client),
             patch("src.config.settings.get_settings", return_value=test_settings),
         ):
             transport = ASGITransport(app=app)
