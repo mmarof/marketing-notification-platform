@@ -19,14 +19,14 @@ jobs:
           xpack.security.enabled: true
           xpack.security.http.ssl.enabled: false
           ELASTIC_PASSWORD: changeme
-          ES_JAVA_OPTS: -Xms512m -Xmx512m
+          ES_JAVA_OPTS: -Xms256m -Xmx256m
         ports:
           - 9200:9200
         options: >-
-          --health-cmd "curl -sf http://localhost:9200/_cluster/health || exit 1"
+          --health-cmd "curl -u elastic:changeme -f http://localhost:9200/_cluster/health || exit 1"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 20
 
       redis:
         image: redis:7-alpine
@@ -36,7 +36,7 @@ jobs:
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 3s
-          --health-retries 5
+          --health-retries 10
 
     steps:
       - name: Checkout code
@@ -79,7 +79,7 @@ jobs:
           pytest tests/integration/ -v --tb=short
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
